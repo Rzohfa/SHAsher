@@ -1,10 +1,12 @@
 #include <iostream>
 #include <vector>
-#include <string>
+#include <sstream>
+#include <iomanip>
+#include <algorithm>
 
 
 // initial array of hash constants
-const unsigned int k[] = {
+const unsigned int K[] = {
 	0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
 	0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
 	0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
@@ -21,13 +23,22 @@ std::vector<std::vector<unsigned int>> M;
 std::vector<std::vector<unsigned int>> H;
 unsigned int W[64];
 int N;
+static const char* dict = "0123456789abcdef";
 unsigned int a, b, c, d, e, f, g, h;
 
-void string_to_hash(std::string str)
+void string_to_hash(const std::string &str)
 {
-	for (int i = 0, j = 0; i < str.length(); i++, j += 2)
+	std::string hex_str;
+	unsigned char c;
+	for (int i = 0; i < str.length(); i++)
 	{
-		unsigned char byte = std::stoi(str.substr(j, 2), nullptr, 16);
+		c = str[i];
+		hex_str.push_back(dict[c >> 4]);
+		hex_str.push_back(dict[c & 15]);
+	}
+	for (int i = 0, j = 0; i < hex_str.length() / 2; ++i, j += 2)
+	{
+		unsigned char byte = std::stoi(hex_str.substr(j, 2), nullptr, 16);
 		bytes.push_back(byte);
 		l += 8;
 	}
@@ -116,8 +127,96 @@ void init_hash_vals()
 	H.push_back(h);
 }
 
+void calculate_hash()
+{
+	unsigned int T1, T2;
+	std::vector<unsigned int> hi(8);
+	for (int i = 1; i <= N; i++)
+	{
+		for (int t = 0; t <= 15; t++)
+			W[t] = M[i - 1][t];
+		for (int t = 16; t <= 63; t++)
+			W[t] = small_sigma1(W[t - 2]) + W[t - 7] + small_sigma0(W[t - 15]) + W[t - 16];
+
+		a = H[i - 1][0];
+		b = H[i - 1][1];
+		c = H[i - 1][2];
+		d = H[i - 1][3];
+		e = H[i - 1][4];
+		f = H[i - 1][5];
+		g = H[i - 1][6];
+		h = H[i - 1][7];
+
+		for (int t = 0; t <= 63; t++)
+		{
+			T1 = h + big_sigma1(e) + Ch(e, f, g) + K[t] + W[t];
+			T2 = big_sigma0(a) + Maj(a, b, c);
+			h = g;
+			g = f;
+			f = e;
+			e = d + T1;
+			d = c;
+			c = b;
+			b = a;
+			a = T1 + T2;
+		}
+
+		hi[0] = a + H[i - 1][0];
+		hi[1] = b + H[i - 1][1];
+		hi[2] = c + H[i - 1][2];
+		hi[3] = d + H[i - 1][3];
+		hi[4] = e + H[i - 1][4];
+		hi[5] = f + H[i - 1][5];
+		hi[6] = g + H[i - 1][6];
+		hi[7] = h + H[i - 1][7];
+		H.push_back(hi);
+	}
+}
+
+void output_hash_debug()
+{
+	std::ostringstream hex_os;
+	for (int i = 0; i < 8; ++i)
+		hex_os << std::hex << std::setw(8) << std::setfill('0') << H[N][i];
+	std::string hex_out = hex_os.str();
+	std::string output;
+	if (hex_out.length() & 1)
+		std::cout << "odd output\n";
+
+	char a, b;
+	for (int i = 0; i < hex_out.length(); i += 2)
+	{
+		a = hex_out[i];
+		const char* p = std::lower_bound(dict, dict + 16, a);
+		if (*p != a)
+			std::cout << "not a hex A ";
+
+		b = hex_out[i + 1];
+		const char* q = std::lower_bound(dict, dict + 16, b);
+		if (*q != b)
+			std::cout << "not a hex B ";
+
+		output.push_back(((p - dict) << 4) | (q - dict));
+	}
+	std::cout << "\n\nOutput: " << output << std::endl << "Output orig: " << hex_out << std::endl;
+}
+
+void output_hash()
+{
+	for (int i = 0; i < 8; ++i)
+		std::cout << std::hex << std::setw(8) << std::setfill('0') << H[N][i];
+	std::cout << std::endl;
+}
+
 int main()
 {
-	std::cout << "Hello world!";
+	//const std::string input = "The quick brown fox jumps over the lazy dog";
+	const std::string input = "";
+	string_to_hash(input);
+	pad_msg();
+	split_msg();
+	init_hash_vals();
+	calculate_hash();
+	output_hash();
 	return 0;
 }
