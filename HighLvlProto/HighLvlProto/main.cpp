@@ -6,7 +6,7 @@
 
 
 // array of hash constants
-const unsigned int K[] = {
+const uint32_t K[] = {
 	0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
 	0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
 	0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
@@ -17,13 +17,13 @@ const unsigned int K[] = {
 	0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
-unsigned long long l = 0;						// message length in bits
-std::vector<unsigned char> bytes;				// vector of bytes containing input message
-std::vector<std::vector<unsigned int>> M;		// vector of vectors of bytes containing splitted input message
-std::vector<std::vector<unsigned int>> H;		// vector of vectors of hash values (hashed message)
-unsigned int W[64];								// message schedule array
-int N;											// number of blocks in padded message
-static const char* dict = "0123456789abcdef";	// dictionary for translating string to hex
+unsigned long long l = 0;							// message length in bits
+std::vector<unsigned char> bytes;					// vector of bytes containing input message
+std::vector<std::vector<uint32_t>> M;				// vector of vectors of bytes containing splitted input message
+std::vector<std::vector<uint32_t>> H;				// vector of vectors of hash values (hashed message)
+uint32_t W[64];										// message schedule array
+int N;												// number of blocks in padded message
+static const char* dict = "0123456789abcdef";		// dictionary for translating string to hex
 
 
 void string_to_bytes(const std::string &str)
@@ -77,14 +77,14 @@ void pad_msg()
 // split message into N 512-bit blocks and saves N
 void split_msg()
 {
-	unsigned int n = 0;
+	uint32_t n = 0;
 	for (int i = 0; n < bytes.size() / 64; n++)
 	{
 		// saving blocks as sixteen 32-bit words
-		std::vector<unsigned int> block(16);
+		std::vector<uint32_t> block(16);
 		for (int j = 0; j < 16; j++)
 		{
-			unsigned int word = 0;
+			uint32_t word = 0;
 			for (int k = 0; k < 4; k++, i++) 
 			{
 				word <<= 8;
@@ -104,43 +104,43 @@ void split_msg()
 }
 
 // function performing bitwise right rotation (circular right shift)
-unsigned int rotate_right(unsigned int input, unsigned int bit_count)
+uint32_t rotate_right(uint32_t input, uint32_t bit_count)
 {
 	return (input >> bit_count) | (input << (32 - bit_count));
 }
 
 // function based on 4.2 formula from specification
-unsigned int Ch(unsigned int x, unsigned int y, unsigned int z)
+uint32_t Ch(uint32_t x, uint32_t y, uint32_t z)
 {
 	return ((x & y) ^ (~x & z));
 }
 
 // function based on 4.3 formula from specification
-unsigned int Maj(unsigned int x, unsigned int y, unsigned int z)
+uint32_t Maj(uint32_t x, uint32_t y, uint32_t z)
 {
 	return ((x & y) ^ (x & z) ^ (y & z));
 }
 
 // function based on 4.4 formula from specification
-unsigned int big_sigma0(unsigned int x)
+uint32_t big_sigma0(uint32_t x)
 {
 	return (rotate_right(x, 2) ^ rotate_right(x, 13) ^ rotate_right(x, 22));
 }
 
 // function based on 4.5 formula from specification
-unsigned int big_sigma1(unsigned int x)
+uint32_t big_sigma1(uint32_t x)
 {
 	return (rotate_right(x, 6) ^ rotate_right(x, 11) ^ rotate_right(x, 25));
 }
 
 // function based on 4.6 formula from specification
-unsigned int small_sigma0(unsigned int x)
+uint32_t small_sigma0(uint32_t x)
 {
 	return (rotate_right(x, 7) ^ rotate_right(x, 18) ^ (x >> 3));
 }
 
 // function based on 4.7 formula from specification
-unsigned int small_sigma1(unsigned int x)
+uint32_t small_sigma1(uint32_t x)
 {
 	return (rotate_right(x, 17) ^ rotate_right(x, 19) ^ (x >> 10));
 }
@@ -148,16 +148,16 @@ unsigned int small_sigma1(unsigned int x)
 // function which saves initial hash values
 void init_hash_vals()
 {
-	std::vector<unsigned int> h = { 0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19 };
+	std::vector<uint32_t> h = { 0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19 };
 	H.push_back(h);
 }
 
 // hashing function
 void calculate_hash()
 {
-	std::vector<unsigned int> hi(8);
-	unsigned int T1, T2;						// temporary words
-	unsigned int a, b, c, d, e, f, g, h;		// hash values of current iteration
+	std::vector<uint32_t> hi(8);
+	uint32_t T1, T2;						// temporary words
+	uint32_t a, b, c, d, e, f, g, h;		// hash values of current iteration
 	for (int i = 1; i <= N; i++)
 	{
 		// preparing message schedule
