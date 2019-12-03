@@ -15,8 +15,6 @@ const uint32_t K[] = {
 	0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
-unsigned long long l = 0;							// message length in bits
-std::vector<unsigned char> bytes;					// vector of bytes containing input message
 std::vector<std::vector<uint32_t>> M;				// vector of vectors of bytes containing splitted input message
 std::vector<std::vector<uint32_t>> H;				// vector of vectors of hash values (hashed message)
 uint32_t W[64];										// message schedule array

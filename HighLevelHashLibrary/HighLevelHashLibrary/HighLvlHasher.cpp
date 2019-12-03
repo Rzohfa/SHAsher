@@ -2,7 +2,7 @@
 #include "pch.h"
 #include "HighLvlHasher.h"
 
-HIGHLVLHASHER_API void hash()
+void hash()
 {
 	int i = 0;
 }

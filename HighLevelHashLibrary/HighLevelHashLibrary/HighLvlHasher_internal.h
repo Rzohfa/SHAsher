@@ -1,6 +1,8 @@
 #ifndef HIGHLVLHASHER_INTERNAL
 #define HIGHLVLHASHER_INTERNAL
 
+#include <cstdint>
+
 uint32_t rotate_right (uint32_t input, uint32_t bit_count);
 uint32_t Ch (uint32_t x, uint32_t y, uint32_t z);
 uint32_t Maj (uint32_t x, uint32_t y, uint32_t z);
