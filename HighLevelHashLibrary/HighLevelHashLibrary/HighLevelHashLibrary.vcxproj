@@ -157,13 +157,11 @@
   <ItemGroup>
     <ClInclude Include="framework.h" />
     <ClInclude Include="HighLvlHasher.h" />
-    <ClInclude Include="HighLvlHasher_internal.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="HighLvlHasher.cpp" />
-    <ClCompile Include="HighLvlHasher_internal.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
