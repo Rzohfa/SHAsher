@@ -27,11 +27,10 @@ namespace hasher
 	uint32_t N;											// number of blocks in padded message
 
 
-	void _cdecl hash(unsigned char* bytes, uint32_t Nblocks, char* return_buffer)
+	void _cdecl hash(unsigned char* bytes, int Nblocks, char* return_buffer)
 	{
-
 		// Split padded message into N 512-bit blocks
-		for (unsigned int i = 0, n = 0; n < Nblocks / 64; n++)
+		for (unsigned int i = 0, n = 0; n < Nblocks; n++)
 		{
 			// saving blocks as sixteen 32-bit words
 			std::vector<uint32_t> block(16);
@@ -65,9 +64,8 @@ namespace hasher
 		std::string hex_out = hex_os.str();
 		if (hex_out.length() & 1)
 			hex_out = "ERROR: odd output";
-		strcpy_s(return_buffer, 256, hex_out.c_str());
+		strcpy_s(return_buffer, 64, hex_out.c_str());
 	}
-
 
 	// function performing bitwise right rotation (circular right shift)
 	uint32_t rotate_right(uint32_t input, uint32_t bit_count)
