@@ -325,7 +325,7 @@ namespace SHAsher
 
         }
 
-        [DllImport("HighLevelHashLibrary.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("HashingLibraries.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern void hash(UInt32[] bytes, int N, byte[] buf);
 
         private void OutFileBrowseBtn_Click(object sender, EventArgs e)
