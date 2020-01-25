@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.28917.181
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SHAsher", "SHAsher\SHAsher.csproj", "{FA1F2E14-E049-4568-842E-32AC16F3698A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F8DA584A-1437-4646-923A-40830EF20BB8} = {F8DA584A-1437-4646-923A-40830EF20BB8}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HighLevelHashLibrary", "..\HighLevelHashLibrary\HighLevelHashLibrary\HighLevelHashLibrary.vcxproj", "{F8DA584A-1437-4646-923A-40830EF20BB8}"
 EndProject
