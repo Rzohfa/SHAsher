@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "HighLvlHasher.h"
 #include <iostream>
 #include <iomanip>
@@ -28,17 +27,68 @@ namespace hasher
 	uint32_t N;											// number of blocks in padded message
 
 
-	void _cdecl hashCpp(uint32_t* bytes, int Nblocks, char* return_buffer)
+	void _cdecl hash(uint32_t* bytes, int Nblocks, char* return_buffer)
 	{
 		M = bytes;
 
 		//M.clear();
 		N = Nblocks;
 
-		// saving number of blocks
+		H[0] = 0x6a09e667;
+		H[1] = 0xbb67ae85;
+		H[2] = 0x3c6ef372;
+		H[3] = 0xa54ff53a;
+		H[4] = 0x510e527f;
+		H[5] = 0x9b05688c;
+		H[6] = 0x1f83d9ab;
+		H[7] = 0x5be0cd19;
 
-		init_hash_vals();
-		calculate_hash();
+		uint32_t T1, T2;						// temporary words
+		uint32_t a, b, c, d, e, f, g, h;		// hash values of current iteration
+		
+		for (unsigned int i = 0; i < N; ++i)
+		{
+			// preparing message schedule
+			for (int t = 0; t < 16; t++)
+				W[t] = M[(i * 16) + t];
+			for (int t = 16; t < 64; t++)
+				W[t] = small_sigma1(W[t - 2]) + W[t - 7] + small_sigma0(W[t - 15]) + W[t - 16];
+
+			// getting hash values of previous iteration
+			a = H[0];
+			b = H[1];
+			c = H[2];
+			d = H[3];
+			e = H[4];
+			f = H[5];
+			g = H[6];
+			h = H[7];
+
+			// calculating new hash values
+			for (int t = 0; t < 64; t++)
+			{
+				T1 = h + big_sigma1(e) + Ch(e, f, g) + K[t] + W[t];
+				T2 = big_sigma0(a) + Maj(a, b, c);
+				h = g;
+				g = f;
+				f = e;
+				e = d + T1;
+				d = c;
+				c = b;
+				b = a;
+				a = T1 + T2;
+			}
+
+			// saving hash values of current iteration
+			H[0] += a;
+			H[1] += b;
+			H[2] += c;
+			H[3] += d;
+			H[4] += e;
+			H[5] += f;
+			H[6] += g;
+			H[7] += h;
+		}
 
 		// sending output to main application
 		std::ostringstream hex_os;
@@ -47,7 +97,7 @@ namespace hasher
 		std::string hex_out = hex_os.str();
 		if (hex_out.length() & 1)
 			hex_out = "ERROR: odd output";
-		strcpy_s(return_buffer, 65, hex_out.c_str());
+		strcpy_s(return_buffer, 64, hex_out.c_str());
 	}
 
 	// function performing bitwise right rotation (circular right shift)
@@ -95,75 +145,13 @@ namespace hasher
 	// function which saves initial hash values
 	void init_hash_vals()
 	{
-		H[0] = 0x6a09e667;
-		H[1] = 0xbb67ae85;
-		H[2] = 0x3c6ef372;
-		H[3] = 0xa54ff53a;
-		H[4] = 0x510e527f;
-		H[5] = 0x9b05688c;
-		H[6] = 0x1f83d9ab;
-		H[7] = 0x5be0cd19;
+		
 	}
 
 
 	// hashing function
 	void calculate_hash()
 	{
-		std::vector<uint32_t> hi(8);
-		uint32_t T1, T2;						// temporary words
-		uint32_t a, b, c, d, e, f, g, h;		// hash values of current iteration
-		//std::vector<std::vector<uint32_t>>::iterator it = M.begin();
-		for (unsigned int i = 0; i < N; ++i)
-		{
-			// preparing message schedule
-			for (int t = 0; t < 16; t++)
-				W[t] = M[(i * 16) + t];
-			for (int t = 16; t < 64; t++)
-				W[t] = small_sigma1(W[t - 2]) + W[t - 7] + small_sigma0(W[t - 15]) + W[t - 16];
-
-			// getting hash values of previous iteration
-			a = H[0];
-			b = H[1];
-			c = H[2];
-			d = H[3];
-			e = H[4];
-			f = H[5];
-			g = H[6];
-			h = H[7];
-
-			hi[0] = H[0];
-			hi[1] = H[1];
-			hi[2] = H[2];
-			hi[3] = H[3];
-			hi[4] = H[4];
-			hi[5] = H[5];
-			hi[6] = H[6];
-			hi[7] = H[7];
-
-			// calculating new hash values
-			for (int t = 0; t < 64; t++)
-			{
-				T1 = h + big_sigma1(e) + Ch(e, f, g) + K[t] + W[t];
-				T2 = big_sigma0(a) + Maj(a, b, c);
-				h = g;
-				g = f;
-				f = e;
-				e = d + T1;
-				d = c;
-				c = b;
-				b = a;
-				a = T1 + T2;
-			}
-
-			// saving hash values of current iteration
-			H[0] = a + hi[0];
-			H[1] = b + hi[1];
-			H[2] = c + hi[2];
-			H[3] = d + hi[3];
-			H[4] = e + hi[4];
-			H[5] = f + hi[5];
-			H[6] = g + hi[6];
-			H[7] = h + hi[7];
-		}
+		
 	}
 }

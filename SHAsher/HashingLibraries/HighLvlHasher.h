@@ -6,7 +6,7 @@
 
 namespace hasher
 {
-	extern "C" _declspec(dllexport) void _cdecl hashCpp(uint32_t* bytes, int Nblocks, char* return_buffer);
+	extern "C" _declspec(dllexport) void _cdecl hash(uint32_t* bytes, int Nblocks, char* return_buffer);
 
 	uint32_t rotate_right(uint32_t input, uint32_t bit_count);
 	uint32_t Ch(uint32_t x, uint32_t y, uint32_t z);

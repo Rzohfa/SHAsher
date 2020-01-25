@@ -119,6 +119,7 @@
       <SubSystem>Windows</SubSystem>
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <LargeAddressAware>false</LargeAddressAware>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
