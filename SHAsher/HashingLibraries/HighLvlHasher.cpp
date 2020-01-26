@@ -22,17 +22,16 @@ namespace hasher
 			0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 		};
 
-		//std::vector<std::vector<uint32_t>> M;
-		uint32_t* M;									// vector of vectors of bytes containing splitted input message
+		uint32_t* M;				// vector of vectors of bytes containing splitted input message
 		uint32_t H[8];				// vector of vectors of hash values (hashed message)
-		uint32_t W[64];										// message schedule array
-		uint32_t N;											// number of blocks in padded message
+		uint32_t W[64];				// message schedule array
+		uint32_t N;					// number of blocks in padded message
 
+		// saving arguments to local variables
 		M = bytes;
-
-		//M.clear();
 		N = Nblocks;
 
+		// Preparing initial hash values according to point 5.3.3 of specification
 		H[0] = 0x6a09e667;
 		H[1] = 0xbb67ae85;
 		H[2] = 0x3c6ef372;
@@ -45,6 +44,7 @@ namespace hasher
 		uint32_t T1, T2;						// temporary words
 		uint32_t a, b, c, d, e, f, g, h;		// hash values of current iteration
 		
+		// main hash loop
 		for (unsigned int i = 0; i < N; ++i)
 		{
 			// preparing message schedule
@@ -63,7 +63,7 @@ namespace hasher
 			g = H[6];
 			h = H[7];
 
-			// calculating new hash values
+			// calculating new hash values 
 			for (int t = 0; t < 64; t++)
 			{
 				T1 = h + big_sigma1(e) + Ch(e, f, g) + K[t] + W[t];
@@ -89,14 +89,13 @@ namespace hasher
 			H[7] += h;
 		}
 
-		// sending output to main application
+		// prepare output for sending to main app
 		std::ostringstream hex_os;
 		for (int i = 0; i < 8; ++i)
 			hex_os << std::hex << std::setw(8) << std::setfill('0') << H[i];
-		std::string hex_out = hex_os.str();
-		if (hex_out.length() & 1)
-			hex_out = "ERROR: odd output";
-		strcpy_s(return_buffer, 65, hex_out.c_str());
+
+		// send output to main app
+		strcpy_s(return_buffer, 65, hex_os.str().c_str());
 	}
 
 	// function performing bitwise right rotation (circular right shift)
