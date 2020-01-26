@@ -139,16 +139,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\HighLevelHashLibrary\HighLevelHashLibrary\HighLvlHasher.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\HighLevelHashLibrary\HighLevelHashLibrary\HighLvlHasher.h" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="module.def" />
   </ItemGroup>
   <ItemGroup>
     <MASM Include="LowLevelHasher.asm" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="HighLvlHasher.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="HighLvlHasher.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
