@@ -20,6 +20,7 @@ hashAsm PROC 							; void hash(uint64 bytes [rcx], int32 N [rdx], uint64 Output
 	mov [rbp-348], rax					; M = bytes
 	mov rax, [rbp+24]					; get N
 	mov [rbp-340], eax					; save N to local variable
+	sfence								; Ensuring correct load order
 	mov dword ptr [rbp-52], 06a09e667h	; init Hash array values H[0]
 	mov dword ptr [rbp-56], 0bb67ae85h	; init Hash array values H[1]
 	mov dword ptr [rbp-60], 03c6ef372h	; init Hash array values H[2]
@@ -28,6 +29,7 @@ hashAsm PROC 							; void hash(uint64 bytes [rcx], int32 N [rdx], uint64 Output
 	mov dword ptr [rbp-72], 09b05688ch	; init Hash array values H[5]
 	mov dword ptr [rbp-76], 01f83d9abh	; init Hash array values H[6]
 	mov dword ptr [rbp-80], 05be0cd19h	; init Hash array values H[7]
+	sfence								; Ensuring correct load order
 	mov dword ptr [rbp-44], 0			; int i = 0
 	loop1:								; for loop
 		mov eax, [rbp-44]				; i -> eax
@@ -188,6 +190,7 @@ hashAsm PROC 							; void hash(uint64 bytes [rcx], int32 N [rdx], uint64 Output
 		jmp loop1						; goto for loop
 	loop1end:							; end of loop
 
+	sfence								; Ensuring correct load order
 	mov eax, [rbp-52]					; get H[0]
 	mov rbx, [rbp+28]					; get output buffer address
 	mov [rbx], eax						; Out[0] = H[0]
@@ -205,6 +208,7 @@ hashAsm PROC 							; void hash(uint64 bytes [rcx], int32 N [rdx], uint64 Output
 	mov [rbx+24], eax					; Out[6] = H[6]
 	mov eax, [rbp-80]					; get H[7]
 	mov [rbx+28], eax					; Out[7] = H[7]
+	sfence								; Ensuring correct load order
 
 	mov rsp, rbp						; restore stack pointer
 	pop rbp								; restore base pointer
