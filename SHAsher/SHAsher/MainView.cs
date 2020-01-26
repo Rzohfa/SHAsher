@@ -20,11 +20,10 @@ namespace SHAsher
         private List<List<UInt32>> M;
         private List<List<List<UInt32>>> listOfM;
         private List<UInt32[]> listOfMArr;
-        //private List<List<byte>> listOfBytes;
-        //private List<byte[]> listOfBytesArr;
         private List<int> N;
         int job = 0;
-        private List<byte[]> output;
+        private List<byte[]> outputCpp;
+        private List<UInt32[]> outputAsm;
         private static Semaphore semaphore = new Semaphore(1, 1);
         private static Semaphore jobEnded;
         long l;
@@ -117,10 +116,9 @@ namespace SHAsher
             bool doRest = true;
             String message;
             inputCounter = 0;
-            output = new List<byte[]>();
+            outputCpp = new List<byte[]>();
+            outputAsm = new List<UInt32[]>();
             bytes = new List<byte>();
-            //listOfBytes = new List<List<byte>>();
-            //listOfBytesArr = new List<byte[]>();
             N = new List<int>();
 
             if (dllChooseCB.Text == "")
@@ -184,6 +182,7 @@ namespace SHAsher
                     inFile.Close();
                     N.Clear();
                     int it = 0;
+
                     // Preparing each input line to be hashed
                     foreach (String inline in input)
                     {
@@ -199,6 +198,8 @@ namespace SHAsher
                         listOfM.Add(M);
                     }
 
+                    input.Clear();
+
                     for (int i = 0; i < listOfM.Count(); i++)
                     {
                         listOfMArr.Add(new UInt32[listOfM[i].Count() * listOfM[0][0].Count()]);
@@ -207,20 +208,22 @@ namespace SHAsher
                                 listOfMArr[i][(j * listOfM[i].Count()) + k] = listOfM[i][j][k];
                     }
 
-                    //listOfBytes.Clear();
-
                     // Prepare ThreadPool
-                    ThreadPool.SetMinThreads(0, 0);
-                    if (inputCounter > (int)threadCounter.Value)
-                        ThreadPool.SetMaxThreads((int)threadCounter.Value, 0);
-                    else
-                        ThreadPool.SetMaxThreads(inputCounter, 0);
+                    ThreadPool.SetMinThreads((int)threadCounter.Value, 0);
+                    ThreadPool.SetMaxThreads((int)threadCounter.Value, 0);
+
+                    bool isCpp = false;
+
+                    if (dllChooseCB.Text == "C++")
+                        isCpp = true;
 
                     // Create/Prepare output list
-                    for (int i = 0; i < inputCounter; i++)
-                    {
-                        output.Add(new byte[64]);
-                    }
+                    if (isCpp)
+                        for (int i = 0; i < inputCounter; i++)
+                            outputCpp.Add(new byte[64]);
+                    else
+                        for (int i = 0; i < inputCounter; i++)
+                            outputAsm.Add(new UInt32[8]);
 
                     statusLabel.Text = "Status: Hashing...";
 
@@ -229,20 +232,12 @@ namespace SHAsher
                     jobEnded = new Semaphore(0, inputCounter);
 
                     // Start threads
-                    if (dllChooseCB.Text == "C++")
-                    {
-                        stopWatch.Start();
-                        doThreads(true);
-                    }
-                    else if (dllChooseCB.Text == "Assembler")
-                    {
-                        stopWatch.Start();
-                        doThreads(false);
-                    }
+                    stopWatch.Start();
+                    doThreads(isCpp);
 
                     try
                     {
-                        foreach (byte[] _output in output)
+                        foreach (UInt32[] _output in listOfMArr)
                             jobEnded.WaitOne();
                     }
                     finally
@@ -251,10 +246,33 @@ namespace SHAsher
                     }
 
                     // Output
-                    foreach (byte[] arr in output)
+                    if (isCpp)
+                        foreach (byte[] arr in outputCpp)
+                            outFile.WriteLine(Encoding.Default.GetString(arr));
+                    else
                     {
-                        outFile.WriteLine(Encoding.Default.GetString(arr));
+                        string hexString;
+                        foreach (UInt32[] arr in outputAsm)
+                        {
+                            hexString = "";
+                            foreach (UInt32 sign in arr)
+                            {
+                                string hexSubString = Convert.ToString(sign, 16);
+                                for(int i=0;i<8-hexSubString.Length;i++)
+                                    hexString += "0";
+                                hexString += hexSubString;
+                            }
+                            outFile.WriteLine(hexString);
+                        }
                     }
+
+                    listOfMArr.Clear();
+                    listOfM.Clear();
+                    input.Clear();
+                    outputCpp.Clear();
+                    outputAsm.Clear();
+                    bytes.Clear();
+                    N.Clear();
 
                     outFile.WriteLine("Number of threads: " + threadCounter.Value.ToString());
                     outFile.WriteLine("Time taken [s]: " + stopWatch.Elapsed.TotalSeconds.ToString());
@@ -275,14 +293,14 @@ namespace SHAsher
         {
             if (isCpp)
             {
-                foreach (byte[] _output in output)
+                foreach (byte[] _output in outputCpp)
                 {
                     ThreadPool.QueueUserWorkItem(new WaitCallback(threadJobCpp));
                 }
             }
             else
             {
-                foreach (byte[] _output in output)
+                foreach (UInt32[] _output in outputAsm)
                 {
                     ThreadPool.QueueUserWorkItem(new WaitCallback(threadJobASM));
                 }
@@ -309,7 +327,7 @@ namespace SHAsher
 
                 if (iteration > -1)
                 {
-                    hash(listOfMArr[iteration], N[iteration], output[iteration]);
+                    hashCpp(listOfMArr[iteration], N[iteration], outputCpp[iteration]);
 
                     jobEnded.Release();
                 }
@@ -322,11 +340,40 @@ namespace SHAsher
 
         private void threadJobASM(object callback)
         {
+            try
+            {
+                // Get your string id
+                int iteration = 0;
+                try
+                {
+                    semaphore.WaitOne();
+                    iteration = inputCounter;
+                    inputCounter--;
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+                iteration--;
 
+                if (iteration > -1)
+                {
+                    hashAsm(listOfMArr[iteration], N[iteration], outputAsm[iteration]);
+
+                    jobEnded.Release();
+                }
+            }
+            catch (Exception exc)
+            {
+                _ = MessageBox.Show(exc.ToString(), title, btn, icon);
+            }
         }
 
         [DllImport("HashingLibraries.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void hash(UInt32[] bytes, int N, byte[] buf);
+        public static extern void hashCpp(UInt32[] bytes, int N, byte[] buf);
+
+        [DllImport("HashingLibraries.dll")]
+        public static extern void hashAsm(UInt32[] bytes, int N, UInt32[] buf);
 
         private void OutFileBrowseBtn_Click(object sender, EventArgs e)
         {

@@ -15,8 +15,6 @@ namespace hasher
 	uint32_t big_sigma1(uint32_t x);
 	uint32_t small_sigma0(uint32_t x);
 	uint32_t small_sigma1(uint32_t x);
-	void init_hash_vals();
-	void calculate_hash();
 }
 
 #endif
