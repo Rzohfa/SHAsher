@@ -12,35 +12,48 @@ using System.Windows.Forms;
 using System.Threading;
 using System.Diagnostics;
 
+
+///////////////////////////////////////////////////////////
+/* 
+ * Autor: Dominik Wolny
+ * Informatyka
+ * Semestr: 5
+ * Grupa dziekanska: 1-2
+ * 
+ * Temat: Hashowanie algorytmem SHA-256
+ */
+///////////////////////////////////////////////////////////
+
 namespace SHAsher
 {
     public partial class MainView : Form
     {
-        private List<byte> bytes;
-        private List<List<UInt32>> M;
-        private List<List<List<UInt32>>> listOfM;
-        private List<UInt32[]> listOfMArr;
-        private List<int> N;
-        int job = 0;
-        private List<byte[]> outputCpp;
-        private List<UInt32[]> outputAsm;
-        private static Semaphore semaphore = new Semaphore(1, 1);
-        private static Semaphore jobEnded;
-        long l;
-        String title = "ERROR!";
-        MessageBoxButtons btn = MessageBoxButtons.OK;
-        MessageBoxIcon icon = MessageBoxIcon.Error;
-        int inputCounter;
-        Stopwatch stopWatch = new Stopwatch();
+        // Creating global variables
+        private List<byte> bytes;                                   // List of bytes, used for first part of preparing input
+        private List<List<UInt32>> M;                               // Message to be hashed, product of all preparing functions
+        private List<List<List<UInt32>>> listOfM;                   // List of messages M
+        private List<UInt32[]> listOfMArr;                          // List of messages saved as array, becaused DLL accepts only array adresses as arguments
+        private List<int> N;                                        // List of numbers of 512-bit blocs 
+        int job = 0;                                                // Number of current job for easier identification in UI
+        private List<byte[]> outputCpp;                             // Output of C++ DLL function
+        private List<UInt32[]> outputAsm;                           // Output of Assembly DLL function
+        private static Semaphore semaphore = new Semaphore(1, 1);   // Semaphore used for restricting threads from accessing and editing global variable
+        private static Semaphore jobEnded;                          // Semaphore used for informing GUI whether hashing was completed
+        long l;                                                     // Variable representing length of message M in bits
+        String title = "ERROR!";                                    // Global title of error popup MessageBox window
+        MessageBoxButtons btn = MessageBoxButtons.OK;               // Global button scheme of error popup MessageBox window 
+        MessageBoxIcon icon = MessageBoxIcon.Error;                 // Global icon of error popup MessageBox window 
+        int inputCounter;                                           // Variable storing amount of input to be hashed, thread use it to identify what to hash
+        Stopwatch stopWatch = new Stopwatch();                      // StopWatch used for measuring time taken for hashing
 
         public MainView()
         {
-            InitializeComponent();
+            InitializeComponent();                                  // Class constructor which displays GUI
         }
 
         private void convertToBytes(string input)
         {
-            // Converting input to Hex
+            // Converting input to Hex and unifying format
             byte[] byteArr = Encoding.Default.GetBytes(input);
             string hexString = BitConverter.ToString(byteArr);
             hexString = hexString.Replace("-", "");
@@ -55,6 +68,7 @@ namespace SHAsher
             }
         }
 
+        // Function used for padding input message (5.1.1 in specification)
         private void padMessage()
         {
             // Calculating k value
@@ -80,6 +94,7 @@ namespace SHAsher
             N.Add(bytes.Count / 64);
         }
 
+        // Function for parsing input message (5.2.1 in specification)
         private void splitMessage(int it)
         {
             // Split padded message into N 512-bit blocks
@@ -107,20 +122,23 @@ namespace SHAsher
 
         private void hashBtn_Click(object sender, EventArgs e)
         {
-            // Preparing variables
+            // Initializing global variables
             listOfMArr = new List<uint[]>();
             listOfM = new List<List<List<UInt32>>>();
-            List<String> input = new List<string>();
-            StreamReader inFile = null;
-            StreamWriter outFile = null;
-            bool doRest = true;
-            String message;
             inputCounter = 0;
             outputCpp = new List<byte[]>();
             outputAsm = new List<UInt32[]>();
             bytes = new List<byte>();
             N = new List<int>();
 
+            // Creating local variables
+            List<String> input = new List<string>();    // List of input messages
+            StreamReader inFile = null;                 // Object storing input file
+            StreamWriter outFile = null;                // Object storing output file
+            bool doRest = true;                         // Boolean ensuring that if at some part program crashes it won't be working any further
+            String message;                             // Variable storing error messages
+
+            // Ensuring that either C++ or Assembly is chosen in GUI
             if (dllChooseCB.Text == "")
             {
                 message = "You haven't chosen the DLL!";
@@ -163,12 +181,15 @@ namespace SHAsher
                 }
             }
 
-            // If files are opened correctly, then preparing and hashing
+            // If files are opened correctly and either C++ or Assembly was chosen, then preparing and hashing
             try
             {
                 if (doRest)
                 {
+                    // Incrementing job ID
                     job++;
+
+                    // Informing user that Preparing input is in progress
                     statusLabel.Text = "Status: Preparing input";
 
                     // Reading the input
@@ -178,9 +199,16 @@ namespace SHAsher
                         input.Add(line);
                     }
 
+                    // Setting global variable storing number of input messages
                     inputCounter = input.Count();
+
+                    // Closing input file as it's no longer needed
                     inFile.Close();
+
+                    // Clearing list of N values to ensure it stores correct values
                     N.Clear();
+
+                    // Local variable used by splitting function
                     int it = 0;
 
                     // Preparing each input line to be hashed
@@ -198,8 +226,10 @@ namespace SHAsher
                         listOfM.Add(M);
                     }
 
+                    // Clearing input list as it's no longer needed
                     input.Clear();
 
+                    // Preparing input for sending to hashing functions, as they accept only address to input array
                     for (int i = 0; i < listOfM.Count(); i++)
                     {
                         listOfMArr.Add(new UInt32[listOfM[i].Count() * listOfM[0][0].Count()]);
@@ -212,12 +242,14 @@ namespace SHAsher
                     ThreadPool.SetMinThreads((int)threadCounter.Value, 0);
                     ThreadPool.SetMaxThreads((int)threadCounter.Value, 0);
 
+                    // Boolean for identification which option (C++/Assembly) was chosen
                     bool isCpp = false;
 
+                    // Setting above boolean
                     if (dllChooseCB.Text == "C++")
                         isCpp = true;
 
-                    // Create/Prepare output list
+                    // Prepare output list
                     if (isCpp)
                         for (int i = 0; i < inputCounter; i++)
                             outputCpp.Add(new byte[64]);
@@ -225,16 +257,20 @@ namespace SHAsher
                         for (int i = 0; i < inputCounter; i++)
                             outputAsm.Add(new UInt32[8]);
 
+                    // Informing user that Hashing is in progress
                     statusLabel.Text = "Status: Hashing...";
 
+                    // Zeroing stopwatch
                     stopWatch.Restart();
 
+                    // Assigning value to semaphore ensuring that GUI will wait for threads to end their job.
                     jobEnded = new Semaphore(0, inputCounter);
 
-                    // Start threads
+                    // Start threads and time measuring
                     stopWatch.Start();
                     doThreads(isCpp);
 
+                    // Waiting for threads to end their job, than stopping stopwatch
                     try
                     {
                         foreach (UInt32[] _output in listOfMArr)
@@ -245,7 +281,7 @@ namespace SHAsher
                         stopWatch.Stop();
                     }
 
-                    // Output
+                    // Writing output
                     if (isCpp)
                         foreach (byte[] arr in outputCpp)
                             outFile.WriteLine(Encoding.Default.GetString(arr));
@@ -266,6 +302,7 @@ namespace SHAsher
                         }
                     }
 
+                    // Clearing variables to save system memory
                     listOfMArr.Clear();
                     listOfM.Clear();
                     input.Clear();
@@ -274,11 +311,14 @@ namespace SHAsher
                     bytes.Clear();
                     N.Clear();
 
+                    // Writing some job info into output file (how much time hashing has taken, and how many threads were used)
                     outFile.WriteLine("Number of threads: " + threadCounter.Value.ToString());
                     outFile.WriteLine("Time taken [s]: " + stopWatch.Elapsed.TotalSeconds.ToString());
 
+                    // Closing output file as it's no longer needed
                     outFile.Close();
 
+                    // Informing user that the hashing was done
                     statusLabel.Text = "Status: Done & ready! [" + job.ToString() + "]";
                 }
             }
@@ -291,50 +331,45 @@ namespace SHAsher
 
         void doThreads(bool isCpp)
         {
+            // Queuing threads
             if (isCpp)
-            {
-                foreach (byte[] _output in outputCpp)
-                {
-                    ThreadPool.QueueUserWorkItem(new WaitCallback(threadJobCpp));
-                }
-            }
+                foreach (byte[] _output in outputCpp)       
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(threadJobCpp));   // Queuing C++ threads
             else
-            {
                 foreach (UInt32[] _output in outputAsm)
-                {
-                    ThreadPool.QueueUserWorkItem(new WaitCallback(threadJobASM));
-                }
-            }
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(threadJobASM));   // Queuing Assembly threads
         }
 
         private void threadJobCpp(object callback)
         {
             try
             {
-                // Get your string id
+                // Get your string id using semaphore so that only one thread edits global variable and thus there are no errors
                 int iteration = 0;
                 try
                 {
                     semaphore.WaitOne();
+                    inputCounter--;     // Decrementing global variable so that next thread does next job. Doing it before assignment because initial value stores number one bigger than last index
                     iteration = inputCounter;
-                    inputCounter--;
                 }
                 finally
                 {
                     semaphore.Release();
                 }
-                iteration--;
 
+                // Ensuring that string ID is valid
                 if (iteration > -1)
                 {
+                    // Hashing
                     hashCpp(listOfMArr[iteration], N[iteration], outputCpp[iteration]);
-
                     jobEnded.Release();
                 }
             }
             catch (Exception exc)
             {
+                // Showing thread execution error
                 _ = MessageBox.Show(exc.ToString(), title, btn, icon);
+                jobEnded.Release(); // Releasing semaphore so that error won't show up all the time
             }
         }
 
@@ -342,22 +377,23 @@ namespace SHAsher
         {
             try
             {
-                // Get your string id
+                // Get your string id using semaphore so that only one thread edits global variable and thus there are no errors
                 int iteration = 0;
                 try
                 {
                     semaphore.WaitOne();
+                    inputCounter--;     // Decrementing global variable so that next thread does next job. Doing it before assignment because initial value stores number one bigger than last index
                     iteration = inputCounter;
-                    inputCounter--;
                 }
                 finally
                 {
                     semaphore.Release();
                 }
-                iteration--;
 
+                // Ensuring that string ID is valid
                 if (iteration > -1)
                 {
+                    // Hashing
                     hashAsm(listOfMArr[iteration], N[iteration], outputAsm[iteration]);
 
                     jobEnded.Release();
@@ -365,16 +401,21 @@ namespace SHAsher
             }
             catch (Exception exc)
             {
+                // Showing thread execution error
                 _ = MessageBox.Show(exc.ToString(), title, btn, icon);
+                jobEnded.Release(); // Releasing semaphore so that error won't show up all the time
             }
         }
 
+        // Importing C++ DLL function 
         [DllImport("HashingLibraries.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern void hashCpp(UInt32[] bytes, int N, byte[] buf);
 
+        // Importing Assembly DLL function 
         [DllImport("HashingLibraries.dll")]
         public static extern void hashAsm(UInt32[] bytes, int N, UInt32[] buf);
 
+        // Dialog window for choosing output file
         private void OutFileBrowseBtn_Click(object sender, EventArgs e)
         {
             var fileDialog = new System.Windows.Forms.OpenFileDialog();
@@ -384,7 +425,7 @@ namespace SHAsher
                 case System.Windows.Forms.DialogResult.OK:
                     var file = fileDialog.FileName;
                     if (Path.GetExtension(file) != ".txt")
-                        _ = MessageBox.Show("Plik musi być rozszerzenia .txt", title, btn, icon);
+                        _ = MessageBox.Show("Plik musi być rozszerzenia .txt", title, btn, icon);   // Ensuring that only text files are loaded
                     else
                         outFileBrowseTxt.Text = file;
                     break;
@@ -395,6 +436,7 @@ namespace SHAsher
             }
         }
 
+        // Dialog window for choosing input file
         private void InFileBrowseBtn_Click(object sender, EventArgs e)
         {
             var fileDialog = new System.Windows.Forms.OpenFileDialog();
@@ -404,7 +446,7 @@ namespace SHAsher
                 case System.Windows.Forms.DialogResult.OK:
                     var file = fileDialog.FileName;
                     if (Path.GetExtension(file) != ".txt")
-                        _ = MessageBox.Show("Plik musi być rozszerzenia .txt", title, btn, icon);
+                        _ = MessageBox.Show("Plik musi być rozszerzenia .txt", title, btn, icon);   // Ensuring that only text files are loaded
                     else
                         inFileBrowseTxt.Text = file;
                     break;
